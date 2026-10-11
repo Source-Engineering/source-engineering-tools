@@ -1,0 +1,31 @@
+{
+  "name": "source-engineering-tools",
+  "version": "0.1.0",
+  "description": "Reusable software utilities for the Source Engineering discipline.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "se-trace": "dist/cli/se-trace.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "trace": "node dist/cli/se-trace.js"
+  },
+  "keywords": [
+    "source-engineering",
+    "tools",
+    "cli",
+    "visualizer",
+    "cots"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  }
+}

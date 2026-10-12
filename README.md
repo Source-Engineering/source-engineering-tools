@@ -1,4 +1,4 @@
-# Source Engineering -- Tools
+# Tools
 
 > Reusable software utilities for the Source Engineering discipline.
 
@@ -30,11 +30,11 @@ se-trace validate examples/legal-summarization.cots.json
 
 ## What is in this repository
 
-- `src/inspect.ts` -- the inspect command. Prints a human-readable summary of a COTS.
-- `src/cite.ts` -- the cite command. Prints the evidence chain for a specific decision.
-- `src/visualize.ts` -- the visualize command. Renders a COTS as a Mermaid diagram + HTML page.
-- `src/cli/se-trace.ts` -- the CLI entry point.
-- `tests/tools.test.ts` -- the test suite.
+- `src/inspect.ts` - the inspect command. Prints a human-readable summary of a COTS.
+- `src/cite.ts` - the cite command. Prints the evidence chain for a specific decision.
+- `src/visualize.ts` - the visualize command. Renders a COTS as a Mermaid diagram + HTML page.
+- `src/cli/se-trace.ts` - the CLI entry point.
+- `tests/tools.test.ts` - the test suite.
 
 ## SDKs
 
@@ -42,9 +42,9 @@ The `sdks/` directory is reserved for typed-language SDKs (TypeScript, Python). 
 
 ## Relationship to other repos
 
-- `Source-Engineering/source-engineering-conformance` -- the canonical conformance test suite. `se-trace validate` is a quick subset; the full suite is in `source-engineering-conformance`.
-- `Source-Engineering/source-engineering-reference-implementation` -- the reference framework that produces COTSs.
-- `Source-Engineering/source-engineering-specifications` -- the COTS schema the tools read.
+- `Source-Engineering/source-engineering-conformance` - the canonical conformance test suite. `se-trace validate` is a quick subset; the full suite is in `source-engineering-conformance`.
+- `Source-Engineering/source-engineering-reference-implementation` - the reference framework that produces COTSs.
+- `Source-Engineering/source-engineering-specifications` - the COTS schema the tools read.
 
 ## Status
 

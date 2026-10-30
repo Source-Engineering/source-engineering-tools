@@ -1,6 +1,7 @@
 /**
  * The se-trace CLI. Three subcommands:
  *   - validate <file>            Run the conformance suite against a COTS.
+ *   - validate-runtime <file>    Surface the Layer 2 ValidationFlags of a COTS.
  *   - inspect <file>             Print a human-readable summary of a COTS.
  *   - cite <file> <decision-id>  Print the evidence chain for a specific decision.
  *   - visualize <file>           Render a COTS as a Reasoning Roadmap (Mermaid + HTML).
@@ -65,6 +66,40 @@ program
       console.log("FAIL");
       for (const issue of result.issues) console.log(`  - ${issue}`);
       process.exit(1);
+    }
+  });
+
+program
+  .command("validate-runtime")
+  .description("Surface the Layer 2 (Runtime Validation) record of a COTS (RFC-0001, COTS schema v1.1.0)")
+  .argument("<path>", "Path to a COTS JSON file")
+  .action((path: string) => {
+    const cots = loadCots(path);
+    let withRecord = 0;
+    let flagged = 0;
+    for (const decision of cots.decisions) {
+      const v = decision.validation;
+      if (v === undefined) {
+        console.log(`${decision.id}\n  No Layer 2 Validation record (the producer has not floored Layer 2).`);
+        continue;
+      }
+      withRecord++;
+      console.log(`${decision.id}`);
+      console.log(`  decision_on_validation: ${v.decision_on_validation}`);
+      console.log(`  validated_at: ${v.validated_at}  by: ${v.validated_by}`);
+      if (v.flags.length === 0) {
+        console.log("  flags: none");
+      } else {
+        if (v.decision_on_validation !== "passed") flagged++;
+        for (const flag of v.flags) {
+          console.log(`  [${flag.flag_type}] ${flag.message} (detected ${flag.detected_at})`);
+        }
+      }
+    }
+    console.log(`\nDecisions with a Validation record: ${withRecord}/${cots.decisions.length}`);
+    if (flagged > 0) {
+      console.log(`Flagged decisions: ${flagged} (flags are warnings, not rejections; Layer 3 decides)`);
+      process.exit(2);
     }
   });
 

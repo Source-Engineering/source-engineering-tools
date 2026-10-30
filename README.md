@@ -26,6 +26,9 @@ se-trace visualize examples/legal-summarization.cots.json -o ./out
 
 # Quick conformance check
 se-trace validate examples/legal-summarization.cots.json
+
+# Surface the Layer 2 (Runtime Validation) record of a COTS (RFC-0001)
+se-trace validate-runtime examples/legal-summarization.cots.json
 ```
 
 ## What is in this repository
@@ -33,7 +36,7 @@ se-trace validate examples/legal-summarization.cots.json
 - `src/inspect.ts` - the inspect command. Prints a human-readable summary of a COTS.
 - `src/cite.ts` - the cite command. Prints the evidence chain for a specific decision.
 - `src/visualize.ts` - the visualize command. Renders a COTS as a Mermaid diagram + HTML page.
-- `src/cli/se-trace.ts` - the CLI entry point.
+- `src/cli/se-trace.ts` - the CLI entry point, including `validate-runtime` (Layer 2 ValidationFlags surfacing, RFC-0001).
 - `tests/tools.test.ts` - the test suite.
 
 ## SDKs

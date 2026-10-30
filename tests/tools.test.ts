@@ -16,7 +16,7 @@ import type { Cots } from "../src/cots.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const loadFixture = (name: string): Cots => {
-  const p = resolve(__dirname, "..", "..", "se-ref", "examples", "output", name);
+  const p = resolve(__dirname, "..", "examples", name);
   return JSON.parse(readFileSync(p, "utf-8"));
 };
 

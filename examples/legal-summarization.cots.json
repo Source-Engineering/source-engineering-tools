@@ -1,0 +1,157 @@
+{
+  "cots_version": "0.1.0",
+  "cots_id": "urn:source-engineering:cots:fa7e606f-57d6-4c29-a654-35245166ad50",
+  "produced_at": "2026-10-30T10:06:58.818Z",
+  "produced_by": {
+    "system_name": "source-engineering-reference-implementation",
+    "system_version": "0.1.0"
+  },
+  "inputs": {
+    "source_artifacts": [
+      {
+        "id": "urn:source-engineering:source:example-contract-2026-001",
+        "origin": {
+          "system_name": "Acme Contracts",
+          "system_version": "1.0.0",
+          "configuration_hash": "0000000000000000000000000000000000000000000000000000000000000001"
+        },
+        "version": {
+          "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "issued_at": "2026-10-10T08:00:00Z"
+        },
+        "authority": {
+          "asserted_by": "acme-contracts",
+          "trust_score": 0.95
+        },
+        "temporal_validity": {
+          "valid_from": "2026-10-10T08:00:00Z",
+          "valid_until": null
+        },
+        "content_reference": {
+          "uri": "https://example.com/contracts/2026-001.pdf",
+          "media_type": "application/pdf"
+        }
+      }
+    ]
+  },
+  "context": {
+    "model": {
+      "model_name": "mock-model",
+      "model_version": "0.1.0"
+    },
+    "parameters": {
+      "temperature": 0.3,
+      "top_p": 0.95,
+      "prompt_cache_id": null,
+      "tool_budget": 8,
+      "retrieval_depth": 5
+    },
+    "constraints": []
+  },
+  "decisions": [
+    {
+      "id": "urn:source-engineering:decision:2ad9262c-6b27-4aa4-a2cd-146049a809f7",
+      "decision_text": "Summary: Summarise the legal document at https://example.com/contracts/2026-001.pdf. Media type: application/pdf. Language: en. Jurisdiction: US-NY. Summary intent: executive. Audience: attorney. Provide a structured summary that an attorney can review and challenge.",
+      "basis_id": "urn:source-engineering:basis:1f9eb410-01a2-4cd9-a5c3-a6a0a9338c94",
+      "evidence_chain_ref": "urn:source-engineering:evidence-chain:1d9fe5c4-45dc-4cb5-97b5-8864730ffa0a",
+      "validation_status": {
+        "status": "pending",
+        "last_changed_at": "2026-10-30T10:06:58.818Z",
+        "last_changed_by": "source-engineering-reference-implementation"
+      },
+      "responsible_authority": {
+        "authority_id": "mock-model",
+        "authority_type": "automated"
+      },
+      "audit_history": [
+        {
+          "id": "urn:source-engineering:audit:f7d64dc8-00ce-41ee-a796-de22cdceb2c6",
+          "action": "created",
+          "performed_by": "source-engineering-reference-implementation",
+          "performed_at": "2026-10-30T10:06:58.818Z",
+          "notes": "Created via Legal Document Summarisation v0.1.0."
+        }
+      ],
+      "created_at": "2026-10-30T10:06:58.818Z"
+    }
+  ],
+  "evidence": {
+    "evidence_chain": [
+      {
+        "decision_id": "urn:source-engineering:decision:2ad9262c-6b27-4aa4-a2cd-146049a809f7",
+        "supporting_evidence": [
+          {
+            "id": "urn:source-engineering:evidence:52b35312-33ee-4223-89ed-60fe0161cc44",
+            "claim_id": "urn:source-engineering:claim:d76db97a-31b2-4ba8-9b78-42a60cf60faf",
+            "source_id": "urn:source-engineering:source:example-contract-2026-001",
+            "transformation": {
+              "operation": "extract_clause",
+              "inputs": [
+                "https://example.com/contracts/2026-001.pdf"
+              ],
+              "output": "Summary: Summarise the legal document at https://example.com/contracts/2026-001.pdf. Media type: application/pdf. Language: en. Jurisdiction: US-NY. Summary intent: executive. Audience: attorney. Provide a structured summary that an attorney can review and challenge.",
+              "recorded_at": "2026-10-30T10:06:58.818Z"
+            },
+            "uncertainty": {
+              "calibrated_score": 0.85,
+              "basis": "Direct extraction from the source."
+            },
+            "polarity": "supports"
+          }
+        ],
+        "contradicting_evidence": [
+          {
+            "id": "urn:source-engineering:evidence:dbf427a5-ae22-478f-bc38-bf53e2ab8b8e",
+            "claim_id": "urn:source-engineering:claim:d76db97a-31b2-4ba8-9b78-42a60cf60faf",
+            "source_id": "urn:source-engineering:source:example-contract-2026-001",
+            "transformation": {
+              "operation": "search_alternative_interpretation",
+              "inputs": [
+                "https://example.com/contracts/2026-001.pdf"
+              ],
+              "output": "An alternative interpretation was considered and rejected (the model chose the canonical reading).",
+              "recorded_at": "2026-10-30T10:06:58.818Z"
+            },
+            "uncertainty": {
+              "calibrated_score": 0.7,
+              "basis": "The alternative interpretation is plausible but inconsistent with the rest of the source."
+            },
+            "polarity": "contradicts"
+          }
+        ],
+        "claims": [
+          {
+            "id": "urn:source-engineering:claim:d76db97a-31b2-4ba8-9b78-42a60cf60faf",
+            "decision_record_id": "urn:source-engineering:decision:2ad9262c-6b27-4aa4-a2cd-146049a809f7",
+            "claim_text": "Summary: Summarise the legal document at https://example.com/contracts/2026-001.pdf. Media type: application/pdf. Language: en. Jurisdiction: US-NY. Summary intent: executive. Audience: attorney. Provide a structured summary that an attorney can review and challenge.",
+            "claim_type": "factual",
+            "supporting_evidence": [
+              "urn:source-engineering:evidence:52b35312-33ee-4223-89ed-60fe0161cc44"
+            ],
+            "contradicting_evidence": [
+              "urn:source-engineering:evidence:dbf427a5-ae22-478f-bc38-bf53e2ab8b8e"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "validation": {
+    "feedback_surfaces": [
+      {
+        "id": "urn:source-engineering:surface:dacaba74-2e08-4207-9520-6a49f5851a89",
+        "type": "appeal",
+        "target": "urn:source-engineering:decision:2ad9262c-6b27-4aa4-a2cd-146049a809f7",
+        "endpoint": "https://example.com/appeal/2ad9262c-6b27-4aa4-a2cd-146049a809f7",
+        "description": "File an appeal against this decision."
+      },
+      {
+        "id": "urn:source-engineering:surface:618683e7-da80-4984-a11d-577da3598f47",
+        "type": "rerun",
+        "target": "urn:source-engineering:decision:2ad9262c-6b27-4aa4-a2cd-146049a809f7",
+        "endpoint": "https://example.com/rerun/2ad9262c-6b27-4aa4-a2cd-146049a809f7",
+        "description": "Re-run the decision with the same evidence under a different model or version."
+      }
+    ]
+  }
+}

@@ -64,3 +64,45 @@ describe("visualize", () => {
     expect(html).toContain("Reasoning Roadmap");
   });
 });
+
+describe("validate-runtime", () => {
+  it("reports a Layer 2 Validation record when present", async () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.decisions[0].validation = {
+      flags: [
+        {
+          flag_type: "drift-detected",
+          message: "Calibration drift detected on segment 'contract-law' (0.14 divergence, threshold 0.10).",
+          detected_at: "2026-10-11T12:00:00Z",
+        },
+      ],
+      decision_on_validation: "flagged",
+      validated_at: "2026-10-11T12:00:00Z",
+      validated_by: "layer2-runtime-validation",
+    };
+    const { execFileSync } = await import("node:child_process");
+    const tmp = resolve(__dirname, "..", "examples", "tmp-validate-runtime.cots.json");
+    const { writeFileSync, rmSync } = await import("node:fs");
+    writeFileSync(tmp, JSON.stringify(cots));
+    try {
+      try {
+        execFileSync("node", [resolve(__dirname, "..", "dist", "cli", "se-trace.js"), "validate-runtime", tmp], { encoding: "utf-8" });
+        throw new Error("expected exit code 2 for a flagged decision");
+      } catch (e) {
+        const err = e as { stdout?: string; status?: number };
+        expect(err.status).toBe(2);
+        const out = err.stdout ?? "";
+        expect(out).toContain("decision_on_validation: flagged");
+        expect(out).toContain("[drift-detected]");
+        expect(out).toContain("Flagged decisions: 1");
+      }
+    } finally {
+      rmSync(tmp, { force: true });
+    }
+  });
+
+  it("reports the absence of a Validation record without failing", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    expect(cots.decisions[0].validation).toBeUndefined();
+  });
+});

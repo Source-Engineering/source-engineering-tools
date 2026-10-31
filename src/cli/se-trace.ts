@@ -104,6 +104,40 @@ program
   });
 
 program
+  .command("recursive")
+  .description("Walk the evidence chains and surface recursive (model-generated) items (RFC-0002)")
+  .argument("<path>", "Path to a COTS JSON file")
+  .action((path: string) => {
+    const cots = loadCots(path);
+    const termination = cots.evidence.chain_termination;
+    console.log(`chain_termination: ${termination?.policy ?? "terminal (default; RFC-0002 fields absent)"}`);
+    if (termination?.policy === "bounded_recursion") {
+      console.log(`max_levels: ${termination.max_levels}`);
+    }
+    let recursive = 0;
+    for (const chain of cots.evidence.evidence_chain) {
+      for (const item of [...chain.supporting_evidence, ...chain.contradicting_evidence]) {
+        if (item.source_type === "model-generated") {
+          recursive++;
+          console.log(`\n[RECURSIVE] ${item.id}`);
+          console.log(`  claim: ${item.claim_id}`);
+          console.log(`  source: ${item.source_id} (model-generated; the chain does not terminate at a human-readable source)`);
+        }
+      }
+    }
+    if (recursive === 0) {
+      console.log("\nNo model-generated evidence items. All chains terminate at their declared sources.");
+    } else {
+      console.log(`\nRecursive items: ${recursive}`);
+      const policy = termination?.policy ?? "terminal";
+      if (policy === "terminal") {
+        console.log("The declared (or default) terminal policy is violated: model-generated items are not admitted.");
+        process.exit(1);
+      }
+    }
+  });
+
+program
   .command("inspect")
   .description("Print a human-readable summary of a COTS")
   .argument("<path>", "Path to a COTS JSON file")

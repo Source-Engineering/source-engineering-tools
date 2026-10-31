@@ -15,7 +15,7 @@ export interface Cots {
   inputs: { source_artifacts: SourceArtifact[] };
   context: Context;
   decisions: DecisionRecord[];
-  evidence: { evidence_chain: EvidenceChainEntry[] };
+  evidence: { chain_termination?: ChainTermination; evidence_chain: EvidenceChainEntry[] };
   validation: { feedback_surfaces: FeedbackSurface[] };
 }
 
@@ -105,6 +105,15 @@ export interface Claim {
   contradicting_evidence: URI[];
 }
 
+export type SourceType = "human-authored" | "human-curated" | "model-generated" | "mixed";
+
+export type ChainTerminationPolicy = "terminal" | "bounded_recursion" | "unbounded_recursion";
+
+export interface ChainTermination {
+  policy: ChainTerminationPolicy;
+  max_levels?: number;
+}
+
 export interface EvidenceItem {
   id: URI;
   claim_id: URI;
@@ -112,6 +121,8 @@ export interface EvidenceItem {
   transformation: { operation: string; inputs: string[]; output: string; recorded_at: ISO8601 };
   uncertainty: { calibrated_score: number; basis: string };
   polarity: string;
+  /** RFC-0002 (COTS schema v1.2.0). Optional. */
+  source_type?: SourceType;
 }
 
 export interface FeedbackSurface {

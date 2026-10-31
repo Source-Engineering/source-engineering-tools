@@ -106,3 +106,39 @@ describe("validate-runtime", () => {
     expect(cots.decisions[0].validation).toBeUndefined();
   });
 });
+
+describe("recursive (RFC-0002)", () => {
+  it("surfaces model-generated evidence items and the declared policy", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.evidence.chain_termination = { policy: "bounded_recursion", max_levels: 1 };
+    cots.evidence.evidence_chain[0].supporting_evidence[0].source_type = "model-generated";
+    const { execFileSync } = require("node:child_process");
+    const { writeFileSync, rmSync } = require("node:fs");
+    const tmp = resolve(__dirname, "..", "examples", "tmp-recursive.cots.json");
+    writeFileSync(tmp, JSON.stringify(cots));
+    try {
+      const out = execFileSync("node", [resolve(__dirname, "..", "dist", "cli", "se-trace.js"), "recursive", tmp], { encoding: "utf-8" });
+      expect(out).toContain("chain_termination: bounded_recursion");
+      expect(out).toContain("[RECURSIVE]");
+      expect(out).toContain("Recursive items: 1");
+    } finally {
+      rmSync(tmp, { force: true });
+    }
+  });
+
+  it("reports a clean chain when all evidence is human-authored", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.evidence.chain_termination = { policy: "terminal" };
+    cots.evidence.evidence_chain[0].supporting_evidence[0].source_type = "human-authored";
+    const { execFileSync } = require("node:child_process");
+    const { writeFileSync, rmSync } = require("node:fs");
+    const tmp = resolve(__dirname, "..", "examples", "tmp-recursive-clean.cots.json");
+    writeFileSync(tmp, JSON.stringify(cots));
+    try {
+      const out = execFileSync("node", [resolve(__dirname, "..", "dist", "cli", "se-trace.js"), "recursive", tmp], { encoding: "utf-8" });
+      expect(out).toContain("No model-generated evidence items");
+    } finally {
+      rmSync(tmp, { force: true });
+    }
+  });
+});

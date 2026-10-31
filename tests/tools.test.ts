@@ -142,3 +142,70 @@ describe("recursive (RFC-0002)", () => {
     }
   });
 });
+
+describe("check-guardrails (RFC-0003)", () => {
+  const RULES = `
+    rule ny-only {
+      when constraint(all_decisions) == "US-NY"
+      then reject
+      with rationale "The declared jurisdiction does not admit automated summarisation."
+    }
+  `;
+
+  it("prints the stored GuardrailDecision when present", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.decisions[0].guardrail = {
+      decision: "rejected",
+      rule_id: "urn:source-engineering:rule:ny-only",
+      rationale: "The declared jurisdiction does not admit automated summarisation.",
+      binding: true,
+      evaluated_at: "2026-10-30T12:00:00Z",
+      evaluated_by: "layer3-business-guardrails",
+    };
+    const { execFileSync } = require("node:child_process");
+    const { writeFileSync, rmSync } = require("node:fs");
+    const tmp = resolve(__dirname, "..", "examples", "tmp-guardrails.cots.json");
+    writeFileSync(tmp, JSON.stringify(cots));
+    try {
+      let out = "";
+      try {
+        execFileSync("node", [resolve(__dirname, "..", "dist", "cli", "se-trace.js"), "check-guardrails", tmp], { encoding: "utf-8" });
+      } catch (e) {
+        out = ((e as { stdout?: string }).stdout ?? "");
+      }
+      expect(out).toContain("decision: rejected (binding)");
+      expect(out).toContain("rule: urn:source-engineering:rule:ny-only");
+    } finally {
+      rmSync(tmp, { force: true });
+    }
+  });
+
+  it("re-evaluates against a rule file with --rules and exits 2 on rejection", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.context.constraints = [
+      { id: "urn:source-engineering:constraint:c1", type: "jurisdiction", scope: "all_decisions", value: "US-NY" },
+    ];
+    const { execFileSync } = require("node:child_process");
+    const { writeFileSync, rmSync } = require("node:fs");
+    const tmp = resolve(__dirname, "..", "examples", "tmp-guardrails-2.cots.json");
+    const rulesFile = resolve(__dirname, "..", "examples", "tmp-rules.gr");
+    writeFileSync(tmp, JSON.stringify(cots));
+    writeFileSync(rulesFile, RULES);
+    try {
+      let out = "";
+      try {
+        execFileSync("node", [resolve(__dirname, "..", "dist", "cli", "se-trace.js"), "check-guardrails", tmp, "--rules", rulesFile], { encoding: "utf-8" });
+        throw new Error("expected exit 2");
+      } catch (e) {
+        const err = e as { stdout?: string; status?: number };
+        expect(err.status).toBe(2);
+        out = err.stdout ?? "";
+      }
+      expect(out).toContain("decision: rejected (binding)");
+      expect(out).toContain("Rejected: 1");
+    } finally {
+      rmSync(tmp, { force: true });
+      rmSync(rulesFile, { force: true });
+    }
+  });
+});

@@ -32,6 +32,10 @@ se-trace validate-runtime examples/legal-summarization.cots.json
 
 # Walk the evidence chains and surface recursive (model-generated) items (RFC-0002)
 se-trace recursive examples/legal-summarization.cots.json
+
+# Print each decision's Layer 3 GuardrailDecision; re-evaluate against a rule file (RFC-0003)
+se-trace check-guardrails examples/legal-summarization.cots.json
+se-trace check-guardrails examples/legal-summarization.cots.json --rules rules.gr
 ```
 
 ## What is in this repository
@@ -39,7 +43,8 @@ se-trace recursive examples/legal-summarization.cots.json
 - `src/inspect.ts` - the inspect command. Prints a human-readable summary of a COTS.
 - `src/cite.ts` - the cite command. Prints the evidence chain for a specific decision.
 - `src/visualize.ts` - the visualize command. Renders a COTS as a Mermaid diagram + HTML page.
-- `src/cli/se-trace.ts` - the CLI entry point, including `validate-runtime` (RFC-0001) and `recursive` (RFC-0002 chain-walking).
+- `src/cli/se-trace.ts` - the CLI entry point, including `validate-runtime` (RFC-0001), `recursive` (RFC-0002), and `check-guardrails` (RFC-0003).
+- `src/guardrails/layer3.ts` - a thin consumer-side port of the reference implementation's Layer 3 for `check-guardrails --rules` re-evaluation.
 - `tests/tools.test.ts` - the test suite.
 
 ## SDKs

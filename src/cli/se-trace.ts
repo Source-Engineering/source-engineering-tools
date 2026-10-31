@@ -138,6 +138,55 @@ program
   });
 
 program
+  .command("check-guardrails")
+  .description("Print each decision's Layer 3 GuardrailDecision (RFC-0003). With --rules, re-evaluate the COTS against a guardrail rule file")
+  .argument("<path>", "Path to a COTS JSON file")
+  .option("-r, --rules <file>", "Path to a guardrail rule file (re-evaluates instead of printing the stored record)")
+  .action(async (path: string, opts: { rules?: string }) => {
+    const cots = loadCots(path);
+    if (opts.rules) {
+      const { Layer3, parseRules } = await import("../guardrails/layer3.js");
+      const dsl = readFileSync(resolve(opts.rules), "utf-8");
+      let rules;
+      try {
+        rules = parseRules(dsl);
+      } catch {
+        console.log("guardrail-rules-malformed");
+        process.exit(1);
+      }
+      const result = new Layer3(rules).evaluate(cots);
+      for (const d of result.cots.decisions) {
+        printGuardrail(d.id, d.guardrail!);
+      }
+      if (result.rejected.length > 0) {
+        console.log(`\nRejected: ${result.rejected.length} (binding rules; the response is stopped and the rejection recorded)`);
+        process.exit(2);
+      }
+      if (result.escalated.length > 0) {
+        console.log(`\nEscalated: ${result.escalated.length}`);
+        process.exit(3);
+      }
+      return;
+    }
+    let withRecord = 0;
+    let rejected = 0;
+    for (const d of cots.decisions) {
+      if (d.guardrail === undefined) {
+        console.log(`${d.id}\n  No Layer 3 GuardrailDecision (the producer has not floored Layer 3).`);
+        continue;
+      }
+      withRecord++;
+      printGuardrail(d.id, d.guardrail);
+      if (d.guardrail.decision === "rejected") rejected++;
+    }
+    console.log(`\nDecisions with a GuardrailDecision: ${withRecord}/${cots.decisions.length}`);
+    if (rejected > 0) {
+      console.log(`Rejected: ${rejected} (binding rules; no silent rejection)`);
+      process.exit(2);
+    }
+  });
+
+program
   .command("inspect")
   .description("Print a human-readable summary of a COTS")
   .argument("<path>", "Path to a COTS JSON file")
@@ -175,5 +224,20 @@ program
     console.log(`Mermaid:  ${mermaidPath}`);
     console.log(`HTML:     ${htmlPath}`);
   });
+
+const printGuardrail = (decisionId: string, g: {
+  decision: string;
+  rule_id: string;
+  rationale: string;
+  binding: boolean;
+  evaluated_at: string;
+  evaluated_by?: string;
+}) => {
+  console.log(decisionId);
+  console.log(`  decision: ${g.decision}${g.binding ? " (binding)" : " (advisory)"}`);
+  console.log(`  rule: ${g.rule_id}`);
+  console.log(`  rationale: ${g.rationale}`);
+  console.log(`  evaluated_at: ${g.evaluated_at}${g.evaluated_by ? `  by: ${g.evaluated_by}` : ""}`);
+};
 
 program.parse();

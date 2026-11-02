@@ -32,6 +32,15 @@ se-trace validate-runtime examples/legal-summarization.cots.json
 
 # Walk the evidence chains and surface recursive (model-generated) items (RFC-0002)
 se-trace recursive examples/legal-summarization.cots.json
+
+# Render the Context Graph (Mermaid + HTML, RFC-0004)
+se-trace context-graph examples/legal-summarization.cots.json -o ./out
+
+# Replay the audit trail (RFC-0005)
+se-trace audit examples/legal-summarization.cots.json
+
+# COTS Explorer: one self-contained HTML page with all four views (Advancement Plan Phase 5)
+se-trace explore examples/legal-summarization.cots.json -o ./out
 ```
 
 ## What is in this repository
@@ -39,6 +48,9 @@ se-trace recursive examples/legal-summarization.cots.json
 - `src/inspect.ts` - the inspect command. Prints a human-readable summary of a COTS.
 - `src/cite.ts` - the cite command. Prints the evidence chain for a specific decision.
 - `src/visualize.ts` - the visualize command. Renders a COTS as a Mermaid diagram + HTML page.
+- `src/context-graph.ts` - the context-graph command. Renders the Context + Evidence parts as a typed-edge graph (RFC-0004).
+- `src/audit.ts` - the audit command. Replays the audit trail and flags append-only/linkage violations (RFC-0005).
+- `src/explore.ts` - the COTS Explorer. One self-contained HTML page combining Reasoning Roadmap, Context Graph, summary, and audit trail.
 - `src/cli/se-trace.ts` - the CLI entry point, including `validate-runtime` (RFC-0001) and `recursive` (RFC-0002 chain-walking).
 - `tests/tools.test.ts` - the test suite.
 

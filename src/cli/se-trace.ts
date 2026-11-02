@@ -7,6 +7,8 @@
  *   - visualize <file>           Render a COTS as a Reasoning Roadmap (Mermaid + HTML).
  *   - context-graph <file>       Render a COTS's Context + Evidence as a Context Graph (RFC-0004).
  *   - audit <file> [decision-id] Replay a decision's audit trail (RFC-0005).
+ *   - explore <file>             Render the COTS Explorer: one self-contained HTML page
+ *                                (Reasoning Roadmap + Context Graph + summary + audit trail).
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -17,6 +19,7 @@ import { cite } from "../cite.js";
 import { toMermaid, toHtml } from "../visualize.js";
 import { toContextGraphMermaid, toContextGraphHtml } from "../context-graph.js";
 import { replayAudit } from "../audit.js";
+import { toExplorerHtml } from "../explore.js";
 import type { Cots } from "../cots.js";
 
 // Lightweight conformance check (subset of the canonical test suite). For
@@ -210,6 +213,21 @@ program
     const report = replayAudit(cots, decisionId);
     for (const line of report.lines) console.log(line);
     if (report.issues.length > 0) process.exit(1);
+  });
+
+program
+  .command("explore")
+  .description("Render the COTS Explorer: a single self-contained HTML page with all four views (Advancement Plan Phase 5)")
+  .argument("<path>", "Path to a COTS JSON file")
+  .option("-o, --out <dir>", "Output directory", ".")
+  .action((path: string, opts: { out: string }) => {
+    const cots = loadCots(path);
+    const baseName = basename(path, extname(path));
+    const html = toExplorerHtml(cots);
+    const htmlPath = resolve(opts.out, `${baseName}.explorer.html`);
+    mkdirSync(dirname(htmlPath), { recursive: true });
+    writeFileSync(htmlPath, html);
+    console.log(`COTS Explorer: ${htmlPath}`);
   });
 
 program.parse();

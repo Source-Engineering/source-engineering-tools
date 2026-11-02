@@ -252,6 +252,25 @@ describe("explore (COTS Explorer)", () => {
   });
 });
 
+describe("quickstart script", () => {
+  it("runs end-to-end: seed -> validate PASS -> explorer page", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const { mkdtempSync, existsSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const workDir = mkdtempSync(join(tmpdir(), "se-qs-test-"));
+    try {
+      const script = resolve(__dirname, "..", "scripts", "quickstart.sh");
+      const out = execFileSync("bash", [script, workDir], { encoding: "utf-8" });
+      expect(out).toContain("PASS");
+      expect(existsSync(join(workDir, "seed.cots.json"))).toBe(true);
+      expect(existsSync(join(workDir, "seed.cots.explorer.html"))).toBe(true);
+    } finally {
+      rmSync(workDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("validate-runtime", () => {
   it("reports a Layer 2 Validation record when present", async () => {
     const cots = loadFixture("legal-summarization.cots.json");

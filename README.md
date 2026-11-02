@@ -12,6 +12,16 @@ npm run build
 node dist/cli/se-trace.js inspect path/to/cots.json
 ```
 
+## 15-minute quickstart
+
+Zero to a validated COTS in one command (Advancement Plan Phase 5 adopter quickstart):
+
+```bash
+bash scripts/quickstart.sh
+```
+
+It fetches (or falls back to the bundled) seed COTS, runs the quick conformance check, prints the inspect/cite summaries, and renders the COTS Explorer page. See `source-engineering-education/quickstart-15-minutes.md` for the guided version.
+
 ## Commands
 
 ```bash

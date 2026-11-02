@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 import { inspect } from "../src/inspect.js";
 import { cite } from "../src/cite.js";
 import { toMermaid, toHtml } from "../src/visualize.js";
+import { toContextGraphMermaid, toContextGraphHtml } from "../src/context-graph.js";
 import type { Cots } from "../src/cots.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -62,6 +63,80 @@ describe("visualize", () => {
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("mermaid");
     expect(html).toContain("Reasoning Roadmap");
+  });
+});
+
+describe("context-graph (RFC-0004)", () => {
+  it("renders every context parameter as a node with a set-by edge", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    const mermaid = toContextGraphMermaid(cots);
+    expect(mermaid).toContain("graph LR");
+    expect(mermaid).toContain("classDef param");
+    expect(mermaid).toContain('param_temperature["temperature = 0.3"]:::param');
+    expect(mermaid).toContain("context -. set-by .-> param_temperature");
+    expect(mermaid).toContain('param_top_p["top_p = 0.95"]');
+    expect(mermaid).toContain('param_tool_budget["tool_budget = 8"]');
+    expect(mermaid).toContain('param_retrieval_depth["retrieval_depth = 5"]');
+    expect(mermaid).toContain('param_prompt_cache_id["prompt_cache_id = null"]');
+  });
+
+  it("links parameters to decisions with contextualises edges", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    const mermaid = toContextGraphMermaid(cots);
+    const decisionId = cots.decisions[0].id.replace(/[^a-zA-Z0-9_]/g, "_");
+    expect(mermaid).toContain(`param_temperature -. contextualises .-> ${decisionId}`);
+  });
+
+  it("renders constraints with constrains edges when present", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.context.constraints = [
+      { id: "urn:source-engineering:constraint:no-medical-advice", type: "scope", scope: "domain", value: "legal-only" },
+    ];
+    const mermaid = toContextGraphMermaid(cots);
+    expect(mermaid).toContain("classDef constraint");
+    expect(mermaid).toContain("constrains .-> context");
+  });
+
+  it("keeps the evidence edges and marks model-generated items distinctly", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.evidence.evidence_chain[0].supporting_evidence[0].source_type = "model-generated";
+    const mermaid = toContextGraphMermaid(cots);
+    expect(mermaid).toContain("-. supports .->");
+    expect(mermaid).toContain("-. contradicts .->");
+    expect(mermaid).toContain("classDef modelGenerated");
+    expect(mermaid).toContain(":::modelGenerated");
+  });
+
+  it("produces a self-contained HTML page titled Context Graph", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    const html = toContextGraphHtml(cots);
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("Context Graph");
+    expect(html).toContain("mermaid");
+  });
+
+  it("writes .context-graph.mermaid and .context-graph.html via the CLI", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const { mkdtempSync, readFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const outDir = mkdtempSync(join(tmpdir(), "se-cg-"));
+    try {
+      const fixture = resolve(__dirname, "..", "examples", "legal-summarization.cots.json");
+      const out = execFileSync(
+        "node",
+        [resolve(__dirname, "..", "dist", "cli", "se-trace.js"), "context-graph", fixture, "-o", outDir],
+        { encoding: "utf-8" }
+      );
+      expect(out).toContain("context-graph.mermaid");
+      expect(out).toContain("context-graph.html");
+      const mermaid = readFileSync(join(outDir, "legal-summarization.cots.context-graph.mermaid"), "utf-8");
+      expect(mermaid).toContain("graph LR");
+      expect(mermaid).toContain("context -. set-by .-> param_temperature");
+      const html = readFileSync(join(outDir, "legal-summarization.cots.context-graph.html"), "utf-8");
+      expect(html).toContain("Context Graph");
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
   });
 });
 

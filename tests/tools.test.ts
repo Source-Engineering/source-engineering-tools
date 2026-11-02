@@ -13,6 +13,7 @@ import { cite } from "../src/cite.js";
 import { toMermaid, toHtml } from "../src/visualize.js";
 import { toContextGraphMermaid, toContextGraphHtml } from "../src/context-graph.js";
 import { replayAudit } from "../src/audit.js";
+import { toExplorerHtml } from "../src/explore.js";
 import type { Cots } from "../src/cots.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -189,6 +190,65 @@ describe("audit (RFC-0005)", () => {
     const cots = loadFixture("legal-summarization.cots.json");
     const report = replayAudit(cots, "urn:source-engineering:decision:does-not-exist");
     expect(report.lines.join("\n")).toContain("not found");
+  });
+});
+
+describe("explore (COTS Explorer)", () => {
+  it("renders one self-contained HTML page with all four views", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    const html = toExplorerHtml(cots);
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("COTS Explorer");
+    expect(html).toContain('data-tab="roadmap"');
+    expect(html).toContain('data-tab="context"');
+    expect(html).toContain('data-tab="summary"');
+    expect(html).toContain('data-tab="audit"');
+    expect(html).toContain("graph LR");
+    expect(html.match(/graph LR/g)?.length).toBe(2);
+    expect(html).toContain("Audit trail: OK");
+    expect(html).toContain("mermaid");
+  });
+
+  it("escapes HTML in the COTS summary", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.decisions[0].decision_text = "<script>alert(1)</script>";
+    const html = toExplorerHtml(cots);
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+
+  it("shows a badge with issue count when the audit trail has violations", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.decisions[0].audit_history.push({
+      id: "urn:source-engineering:audit:dup",
+      action: "appealed",
+      performed_by: "r",
+      performed_at: "2026-11-02T09:00:00Z",
+      notes: "decision_id=urn:source-engineering:decision:nope",
+    });
+    const html = toExplorerHtml(cots);
+    expect(html).toContain('badge bad');
+  });
+
+  it("writes <base>.explorer.html via the CLI", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const { mkdtempSync, readFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const outDir = mkdtempSync(join(tmpdir(), "se-explore-"));
+    try {
+      const fixture = resolve(__dirname, "..", "examples", "legal-summarization.cots.json");
+      const out = execFileSync(
+        "node",
+        [resolve(__dirname, "..", "dist", "cli", "se-trace.js"), "explore", fixture, "-o", outDir],
+        { encoding: "utf-8" }
+      );
+      expect(out).toContain("explorer.html");
+      const html = readFileSync(join(outDir, "legal-summarization.cots.explorer.html"), "utf-8");
+      expect(html).toContain("COTS Explorer");
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
   });
 });
 

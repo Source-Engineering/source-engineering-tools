@@ -6,6 +6,7 @@
  *   - cite <file> <decision-id>  Print the evidence chain for a specific decision.
  *   - visualize <file>           Render a COTS as a Reasoning Roadmap (Mermaid + HTML).
  *   - context-graph <file>       Render a COTS's Context + Evidence as a Context Graph (RFC-0004).
+ *   - audit <file> [decision-id] Replay a decision's audit trail (RFC-0005).
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -15,6 +16,7 @@ import { inspect } from "../inspect.js";
 import { cite } from "../cite.js";
 import { toMermaid, toHtml } from "../visualize.js";
 import { toContextGraphMermaid, toContextGraphHtml } from "../context-graph.js";
+import { replayAudit } from "../audit.js";
 import type { Cots } from "../cots.js";
 
 // Lightweight conformance check (subset of the canonical test suite). For
@@ -196,6 +198,18 @@ program
     writeFileSync(htmlPath, html);
     console.log(`Mermaid:  ${mermaidPath}`);
     console.log(`HTML:     ${htmlPath}`);
+  });
+
+program
+  .command("audit")
+  .description("Replay the audit trail of every decision (or one decision) and flag append-only/linkage violations (RFC-0005)")
+  .argument("<path>", "Path to a COTS JSON file")
+  .argument("[decision-id]", "Optional decision id to replay")
+  .action((path: string, decisionId?: string) => {
+    const cots = loadCots(path);
+    const report = replayAudit(cots, decisionId);
+    for (const line of report.lines) console.log(line);
+    if (report.issues.length > 0) process.exit(1);
   });
 
 program.parse();

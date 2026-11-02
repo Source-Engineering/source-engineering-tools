@@ -12,6 +12,7 @@ import { inspect } from "../src/inspect.js";
 import { cite } from "../src/cite.js";
 import { toMermaid, toHtml } from "../src/visualize.js";
 import { toContextGraphMermaid, toContextGraphHtml } from "../src/context-graph.js";
+import { replayAudit } from "../src/audit.js";
 import type { Cots } from "../src/cots.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -137,6 +138,57 @@ describe("context-graph (RFC-0004)", () => {
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("audit (RFC-0005)", () => {
+  it("replays a clean audit trail with no issues", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    const did = cots.decisions[0].id;
+    cots.decisions[0].audit_history.push({
+      id: "urn:source-engineering:audit:test-002",
+      action: "appealed",
+      performed_by: "reviewer-1",
+      performed_at: "2026-11-02T09:00:00Z",
+      notes: `User appealed. decision_id=${did}`,
+    });
+    const report = replayAudit(cots);
+    expect(report.issues).toHaveLength(0);
+    expect(report.lines.join("\n")).toContain("APPEALED");
+    expect(report.lines.join("\n")).toContain("Audit trail: OK");
+  });
+
+  it("flags a dangling lifecycle event", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    cots.decisions[0].audit_history.push({
+      id: "urn:source-engineering:audit:test-003",
+      action: "appealed",
+      performed_by: "reviewer-1",
+      performed_at: "2026-11-02T09:00:00Z",
+      notes: "User appealed. decision_id=urn:source-engineering:decision:nope",
+    });
+    const report = replayAudit(cots);
+    expect(report.issues.some((i) => i.test_id === "TC-L4-03")).toBe(true);
+  });
+
+  it("flags an unlinked rerun", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    const did = cots.decisions[0].id;
+    cots.decisions[0].audit_history.push({
+      id: "urn:source-engineering:audit:test-004",
+      action: "rerun",
+      performed_by: "reviewer-1",
+      performed_at: "2026-11-02T09:00:00Z",
+      notes: `Re-run. decision_id=${did}`,
+    });
+    const report = replayAudit(cots, did);
+    expect(report.issues.some((i) => i.test_id === "TC-L4-04")).toBe(true);
+  });
+
+  it("reports a not-found decision", () => {
+    const cots = loadFixture("legal-summarization.cots.json");
+    const report = replayAudit(cots, "urn:source-engineering:decision:does-not-exist");
+    expect(report.lines.join("\n")).toContain("not found");
   });
 });
 

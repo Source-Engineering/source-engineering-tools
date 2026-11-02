@@ -5,6 +5,7 @@
  *   - inspect <file>             Print a human-readable summary of a COTS.
  *   - cite <file> <decision-id>  Print the evidence chain for a specific decision.
  *   - visualize <file>           Render a COTS as a Reasoning Roadmap (Mermaid + HTML).
+ *   - context-graph <file>       Render a COTS's Context + Evidence as a Context Graph (RFC-0004).
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -13,6 +14,7 @@ import { Command } from "commander";
 import { inspect } from "../inspect.js";
 import { cite } from "../cite.js";
 import { toMermaid, toHtml } from "../visualize.js";
+import { toContextGraphMermaid, toContextGraphHtml } from "../context-graph.js";
 import type { Cots } from "../cots.js";
 
 // Lightweight conformance check (subset of the canonical test suite). For
@@ -168,6 +170,26 @@ program
     const html = toHtml(cots);
     const mermaidPath = resolve(opts.out, `${baseName}.mermaid`);
     const htmlPath = resolve(opts.out, `${baseName}.reasoning-roadmap.html`);
+    mkdirSync(dirname(mermaidPath), { recursive: true });
+    mkdirSync(dirname(htmlPath), { recursive: true });
+    writeFileSync(mermaidPath, mermaid);
+    writeFileSync(htmlPath, html);
+    console.log(`Mermaid:  ${mermaidPath}`);
+    console.log(`HTML:     ${htmlPath}`);
+  });
+
+program
+  .command("context-graph")
+  .description("Render a COTS's Context + Evidence parts as a Context Graph (Mermaid + HTML, RFC-0004)")
+  .argument("<path>", "Path to a COTS JSON file")
+  .option("-o, --out <dir>", "Output directory", ".")
+  .action((path: string, opts: { out: string }) => {
+    const cots = loadCots(path);
+    const baseName = basename(path, extname(path));
+    const mermaid = toContextGraphMermaid(cots);
+    const html = toContextGraphHtml(cots);
+    const mermaidPath = resolve(opts.out, `${baseName}.context-graph.mermaid`);
+    const htmlPath = resolve(opts.out, `${baseName}.context-graph.html`);
     mkdirSync(dirname(mermaidPath), { recursive: true });
     mkdirSync(dirname(htmlPath), { recursive: true });
     writeFileSync(mermaidPath, mermaid);

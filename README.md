@@ -43,14 +43,9 @@ se-trace validate-runtime examples/legal-summarization.cots.json
 # Walk the evidence chains and surface recursive (model-generated) items (RFC-0002)
 se-trace recursive examples/legal-summarization.cots.json
 
-# Render the Context Graph (Mermaid + HTML, RFC-0004)
-se-trace context-graph examples/legal-summarization.cots.json -o ./out
-
-# Replay the audit trail (RFC-0005)
-se-trace audit examples/legal-summarization.cots.json
-
-# COTS Explorer: one self-contained HTML page with all four views (Advancement Plan Phase 5)
-se-trace explore examples/legal-summarization.cots.json -o ./out
+# Print each decision's Layer 3 GuardrailDecision; re-evaluate against a rule file (RFC-0003)
+se-trace check-guardrails examples/legal-summarization.cots.json
+se-trace check-guardrails examples/legal-summarization.cots.json --rules rules.gr
 ```
 
 ## What is in this repository
@@ -58,10 +53,8 @@ se-trace explore examples/legal-summarization.cots.json -o ./out
 - `src/inspect.ts` - the inspect command. Prints a human-readable summary of a COTS.
 - `src/cite.ts` - the cite command. Prints the evidence chain for a specific decision.
 - `src/visualize.ts` - the visualize command. Renders a COTS as a Mermaid diagram + HTML page.
-- `src/context-graph.ts` - the context-graph command. Renders the Context + Evidence parts as a typed-edge graph (RFC-0004).
-- `src/audit.ts` - the audit command. Replays the audit trail and flags append-only/linkage violations (RFC-0005).
-- `src/explore.ts` - the COTS Explorer. One self-contained HTML page combining Reasoning Roadmap, Context Graph, summary, and audit trail.
-- `src/cli/se-trace.ts` - the CLI entry point, including `validate-runtime` (RFC-0001) and `recursive` (RFC-0002 chain-walking).
+- `src/cli/se-trace.ts` - the CLI entry point, including `validate-runtime` (RFC-0001), `recursive` (RFC-0002), and `check-guardrails` (RFC-0003).
+- `src/guardrails/layer3.ts` - a thin consumer-side port of the reference implementation's Layer 3 for `check-guardrails --rules` re-evaluation.
 - `tests/tools.test.ts` - the test suite.
 
 ## SDKs

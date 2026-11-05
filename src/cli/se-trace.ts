@@ -145,6 +145,55 @@ program
   });
 
 program
+  .command("check-guardrails")
+  .description("Print each decision's Layer 3 GuardrailDecision (RFC-0003). With --rules, re-evaluate the COTS against a guardrail rule file")
+  .argument("<path>", "Path to a COTS JSON file")
+  .option("-r, --rules <file>", "Path to a guardrail rule file (re-evaluates instead of printing the stored record)")
+  .action(async (path: string, opts: { rules?: string }) => {
+    const cots = loadCots(path);
+    if (opts.rules) {
+      const { Layer3, parseRules } = await import("../guardrails/layer3.js");
+      const dsl = readFileSync(resolve(opts.rules), "utf-8");
+      let rules;
+      try {
+        rules = parseRules(dsl);
+      } catch {
+        console.log("guardrail-rules-malformed");
+        process.exit(1);
+      }
+      const result = new Layer3(rules).evaluate(cots);
+      for (const d of result.cots.decisions) {
+        printGuardrail(d.id, d.guardrail!);
+      }
+      if (result.rejected.length > 0) {
+        console.log(`\nRejected: ${result.rejected.length} (binding rules; the response is stopped and the rejection recorded)`);
+        process.exit(2);
+      }
+      if (result.escalated.length > 0) {
+        console.log(`\nEscalated: ${result.escalated.length}`);
+        process.exit(3);
+      }
+      return;
+    }
+    let withRecord = 0;
+    let rejected = 0;
+    for (const d of cots.decisions) {
+      if (d.guardrail === undefined) {
+        console.log(`${d.id}\n  No Layer 3 GuardrailDecision (the producer has not floored Layer 3).`);
+        continue;
+      }
+      withRecord++;
+      printGuardrail(d.id, d.guardrail);
+      if (d.guardrail.decision === "rejected") rejected++;
+    }
+    console.log(`\nDecisions with a GuardrailDecision: ${withRecord}/${cots.decisions.length}`);
+    if (rejected > 0) {
+      console.log(`Rejected: ${rejected} (binding rules; no silent rejection)`);
+      process.exit(2);
+    }
+  });
+
+program
   .command("inspect")
   .description("Print a human-readable summary of a COTS")
   .argument("<path>", "Path to a COTS JSON file")
@@ -183,51 +232,19 @@ program
     console.log(`HTML:     ${htmlPath}`);
   });
 
-program
-  .command("context-graph")
-  .description("Render a COTS's Context + Evidence parts as a Context Graph (Mermaid + HTML, RFC-0004)")
-  .argument("<path>", "Path to a COTS JSON file")
-  .option("-o, --out <dir>", "Output directory", ".")
-  .action((path: string, opts: { out: string }) => {
-    const cots = loadCots(path);
-    const baseName = basename(path, extname(path));
-    const mermaid = toContextGraphMermaid(cots);
-    const html = toContextGraphHtml(cots);
-    const mermaidPath = resolve(opts.out, `${baseName}.context-graph.mermaid`);
-    const htmlPath = resolve(opts.out, `${baseName}.context-graph.html`);
-    mkdirSync(dirname(mermaidPath), { recursive: true });
-    mkdirSync(dirname(htmlPath), { recursive: true });
-    writeFileSync(mermaidPath, mermaid);
-    writeFileSync(htmlPath, html);
-    console.log(`Mermaid:  ${mermaidPath}`);
-    console.log(`HTML:     ${htmlPath}`);
-  });
-
-program
-  .command("audit")
-  .description("Replay the audit trail of every decision (or one decision) and flag append-only/linkage violations (RFC-0005)")
-  .argument("<path>", "Path to a COTS JSON file")
-  .argument("[decision-id]", "Optional decision id to replay")
-  .action((path: string, decisionId?: string) => {
-    const cots = loadCots(path);
-    const report = replayAudit(cots, decisionId);
-    for (const line of report.lines) console.log(line);
-    if (report.issues.length > 0) process.exit(1);
-  });
-
-program
-  .command("explore")
-  .description("Render the COTS Explorer: a single self-contained HTML page with all four views (Advancement Plan Phase 5)")
-  .argument("<path>", "Path to a COTS JSON file")
-  .option("-o, --out <dir>", "Output directory", ".")
-  .action((path: string, opts: { out: string }) => {
-    const cots = loadCots(path);
-    const baseName = basename(path, extname(path));
-    const html = toExplorerHtml(cots);
-    const htmlPath = resolve(opts.out, `${baseName}.explorer.html`);
-    mkdirSync(dirname(htmlPath), { recursive: true });
-    writeFileSync(htmlPath, html);
-    console.log(`COTS Explorer: ${htmlPath}`);
-  });
+const printGuardrail = (decisionId: string, g: {
+  decision: string;
+  rule_id: string;
+  rationale: string;
+  binding: boolean;
+  evaluated_at: string;
+  evaluated_by?: string;
+}) => {
+  console.log(decisionId);
+  console.log(`  decision: ${g.decision}${g.binding ? " (binding)" : " (advisory)"}`);
+  console.log(`  rule: ${g.rule_id}`);
+  console.log(`  rationale: ${g.rationale}`);
+  console.log(`  evaluated_at: ${g.evaluated_at}${g.evaluated_by ? `  by: ${g.evaluated_by}` : ""}`);
+};
 
 program.parse();

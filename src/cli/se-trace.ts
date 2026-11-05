@@ -5,6 +5,10 @@
  *   - inspect <file>             Print a human-readable summary of a COTS.
  *   - cite <file> <decision-id>  Print the evidence chain for a specific decision.
  *   - visualize <file>           Render a COTS as a Reasoning Roadmap (Mermaid + HTML).
+ *   - context-graph <file>       Render a COTS's Context + Evidence as a Context Graph (RFC-0004).
+ *   - audit <file> [decision-id] Replay a decision's audit trail (RFC-0005).
+ *   - explore <file>             Render the COTS Explorer: one self-contained HTML page
+ *                                (Reasoning Roadmap + Context Graph + summary + audit trail).
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -13,6 +17,9 @@ import { Command } from "commander";
 import { inspect } from "../inspect.js";
 import { cite } from "../cite.js";
 import { toMermaid, toHtml } from "../visualize.js";
+import { toContextGraphMermaid, toContextGraphHtml } from "../context-graph.js";
+import { replayAudit } from "../audit.js";
+import { toExplorerHtml } from "../explore.js";
 import type { Cots } from "../cots.js";
 
 // Lightweight conformance check (subset of the canonical test suite). For
